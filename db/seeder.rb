@@ -16,6 +16,7 @@ end
 
 def drop_tables(db)
   db.execute('DROP TABLE IF EXISTS exempel')
+  db.execute('DROP TABLE IF EXISTS users')
 end
 
 def create_tables(db)
@@ -27,7 +28,8 @@ def create_tables(db)
   db.execute('CREATE TABLE users (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               user TEXT NOT NULL, 
-              pwd_digest TEXT NOT NULL)')
+              pwd_digest TEXT NOT NULL,
+              funds INTEGER)')
 end
 
 def populate_tables(db)

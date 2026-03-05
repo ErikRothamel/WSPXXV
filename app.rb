@@ -39,7 +39,7 @@ post '/register' do
       pwd_digest=BCrypt::Password.create(pwd)
       p user
       p pwd_digest
-      db.execute("INSERT INTO users(user, pwd_digest) VALUES(?,?)",[user,pwd_digest])
+      db.execute("INSERT INTO users(user, pwd_digest,funds) VALUES(?,?,?)",[user,pwd_digest,0])
       redirect('/homepage')
     else
       redirect('/error') #lösenord matchar ej
@@ -82,4 +82,41 @@ post '/login' do
   else
     redirect('error')
   end
+end
+
+
+get '/game' do
+
+
+
+
+
+  slim(:game)
+end
+
+get '/cash' do
+
+
+
+
+
+  slim(:cash)
+end
+
+post '/cash' do
+  user = params[:user] #hitta user (via sessions(?))
+  cash = params[:cash]
+  
+  db = SQLite3::Database.new("db/databas.db")
+
+  db.results_as_hash = true
+
+  db.execute("UPDATE users SET funds = funds + ? WHERE user = ?", [cash, user])
+  
+  #db.execute(
+  #  "UPDATE users SET funds = funds + ? WHERE id = ?",
+  #  [cash, session["user_id"]]
+  #)
+  
+  redirect '/cash'
 end
