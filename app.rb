@@ -4,7 +4,9 @@ require 'sqlite3'
 require 'sinatra/reloader'
 require 'bcrypt'
 
-enable :session
+set :session_secret, '34567897656787654567898765456788765445678765434567898765434567898765434567890987654387434567898765434567876543245678876543456789856787654345678765'
+
+enable :sessions
 
 get '/homepage' do
     
@@ -86,12 +88,30 @@ end
 
 
 get '/game' do
+  @win_message = session.delete(:win_message)  # hämtar meddelandet och tar bort det
+  slim :game
+end
 
 
 
+post '/game' do
+  user = params[:user]
+  stake = params[:stake].to_i
 
+  db = SQLite3::Database.new("db/databas.db")
+  db.results_as_hash = true
 
-  slim(:game)
+  result = rand(1..3)
+
+  if result != 1
+    db.execute("UPDATE users SET funds = funds + ? WHERE user = ?", [stake*2, user])
+    session[:win_message] = "Vinst!!"
+  else
+    db.execute("UPDATE users SET funds = funds - ? WHERE user = ?", [stake, user])
+    session[:win_message] = "Förlust :("
+  end
+
+  redirect '/game'
 end
 
 get '/cash' do
@@ -111,12 +131,7 @@ post '/cash' do
 
   db.results_as_hash = true
 
-  db.execute("UPDATE users SET funds = funds + ? WHERE user = ?", [cash, user])
-  
-  #db.execute(
-  #  "UPDATE users SET funds = funds + ? WHERE id = ?",
-  #  [cash, session["user_id"]]
-  #)
+  db.execute("UPDATE users SET funds = funds + 0 + ? WHERE user = ?", [cash, user])
   
   redirect '/cash'
 end
