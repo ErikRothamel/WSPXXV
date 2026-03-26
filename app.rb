@@ -8,6 +8,7 @@ set :session_secret, '3456789765678765456789876545678876544567876543456789876543
 
 enable :sessions
 
+
 get '/homepage' do
     
 
@@ -24,6 +25,7 @@ get '/register' do
 
   slim(:register)
 end
+
 
 post '/register' do
   
@@ -61,6 +63,7 @@ get '/login' do
 
   slim(:login)
 end
+
 
 post '/login' do
   user = params[:user]
@@ -114,6 +117,7 @@ post '/game' do
   redirect '/game'
 end
 
+
 get '/cash' do
 
 
@@ -122,6 +126,7 @@ get '/cash' do
 
   slim(:cash)
 end
+
 
 post '/cash' do
   user = params[:user] #hitta user (via sessions(?))
@@ -134,4 +139,40 @@ post '/cash' do
   db.execute("UPDATE users SET funds = funds + 0 + ? WHERE user = ?", [cash, user])
   
   redirect '/cash'
+end
+
+
+get '/shop' do
+  db = SQLite3::Database.new("db/databas.db")
+  db.results_as_hash = true
+
+  @productsarr = db.execute("SELECT * FROM products")
+
+
+
+  slim(:shop)
+end 
+
+
+post '/shop' do
+  
+
+
+
+
+
+  redirect '/shop'
+end
+
+
+post '/buy' do
+  product_id = params[:id]
+  user_id = session[:user_id]
+
+  db = SQLite3::Database.new("db/databas.db")
+  db.execute("INSERT INTO user_product(user_id, product_id) VALUES(?,?)",[user_id, product_id])
+
+
+
+  redirect '/shop'
 end
