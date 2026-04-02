@@ -1,9 +1,10 @@
 h1 Play
 
 form action="/game" method="post"
-  input name="user" placeholder="Användare" type="text"
   input name="stake" placeholder="Insats" type="number"
   input type="submit" value="confirm"
 
 - if @win_message
   p= @win_message
+
+p Saldo: #{@funds} kr

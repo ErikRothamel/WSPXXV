@@ -91,14 +91,18 @@ end
 
 
 get '/game' do
-  @win_message = session.delete(:win_message)  # hämtar meddelandet och tar bort det
+  db = SQLite3::Database.new("db/databas.db")
+  db.results_as_hash = true
+
+  @funds = db.execute("SELECT funds FROM users WHERE id = ?", session[:user_id]).first["funds"]
+
+  @win_message = session.delete(:win_message)
   slim :game
 end
 
 
-
 post '/game' do
-  user = params[:user]
+  user_id = session[:user_id]
   stake = params[:stake].to_i
 
   db = SQLite3::Database.new("db/databas.db")
@@ -107,10 +111,10 @@ post '/game' do
   result = rand(1..3)
 
   if result != 1
-    db.execute("UPDATE users SET funds = funds + ? WHERE user = ?", [stake*2, user])
+    db.execute("UPDATE users SET funds = funds + ? WHERE id = ?", [stake*2, user_id])
     session[:win_message] = "Vinst!!"
   else
-    db.execute("UPDATE users SET funds = funds - ? WHERE user = ?", [stake, user])
+    db.execute("UPDATE users SET funds = funds - ? WHERE id = ?", [stake, user_id])
     session[:win_message] = "Förlust :("
   end
 
@@ -119,24 +123,23 @@ end
 
 
 get '/cash' do
+  db = SQLite3::Database.new("db/databas.db")
+  db.results_as_hash = true
 
-
-
-
+  @funds = db.execute("SELECT funds FROM users WHERE id = ?", session[:user_id]).first["funds"]
 
   slim(:cash)
 end
 
 
 post '/cash' do
-  user = params[:user] #hitta user (via sessions(?))
+  user_id = session[:user_id]
   cash = params[:cash]
   
   db = SQLite3::Database.new("db/databas.db")
-
   db.results_as_hash = true
 
-  db.execute("UPDATE users SET funds = funds + 0 + ? WHERE user = ?", [cash, user])
+  db.execute("UPDATE users SET funds = funds + 0 + ? WHERE id = ?", [cash, user_id])
   
   redirect '/cash'
 end
@@ -146,8 +149,7 @@ get '/shop' do
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
-  @productsarr = db.execute("SELECT * FROM products")
-
+  @productsarr = db.execute("SELECT * FROM products WHERE id NOT IN (SELECT product_id FROM user_product WHERE user_id = ?)", session[:user_id])
 
 
   slim(:shop)
@@ -166,13 +168,20 @@ end
 
 
 post '/buy' do
-  product_id = params[:id]
+  product_id = params[:product_id]
   user_id = session[:user_id]
 
   db = SQLite3::Database.new("db/databas.db")
-  db.execute("INSERT INTO user_product(user_id, product_id) VALUES(?,?)",[user_id, product_id])
+  db.results_as_hash = true
 
+  price = db.execute("SELECT price FROM products WHERE id = ?", product_id).first["price"]
+  funds = db.execute("SELECT funds FROM users WHERE id = ?", user_id).first["funds"]
 
-
-  redirect '/shop'
+  if funds >= price
+    db.execute("INSERT INTO user_product(user_id, product_id) VALUES(?,?)", [user_id, product_id])
+    db.execute("UPDATE users SET funds = funds - ? WHERE id = ?", [price, user_id])
+    redirect '/shop'
+  else
+    redirect '/error'
+  end
 end

@@ -2,7 +2,7 @@ h2 SHOP
 
 - @productsarr.each do |product|
     div
-    p #{product["id"]} #{product["name"]}
+    p #{product["id"]} #{product["name"]} #{product["price"]} kr
     form action="/buy" method="post"
       input type="hidden" name="product_id" value="#{product["id"]}"
       button type="submit" Köp
