@@ -10,9 +10,6 @@ enable :sessions
 
 
 get '/homepage' do
-    
-
-
 
   slim(:homepage)
 end
@@ -185,3 +182,33 @@ post '/buy' do
     redirect '/error'
   end
 end
+
+get '/delete_account' do
+  db = SQLite3::Database.new("db/databas.db")
+  db.results_as_hash = true
+
+  @user = db.execute("SELECT user FROM users WHERE id = ?", session[:user_id]).first["user"]
+
+  slim(:delete_account)
+end
+
+post '/delete_account' do
+  user_id = session[:user_id]
+  pwd = params[:pwd]
+
+  db = SQLite3::Database.new("db/databas.db")
+  db.results_as_hash = true
+
+  result = db.execute("SELECT pwd_digest FROM users WHERE id = ?", user_id).first
+  pwd_digest = result["pwd_digest"]
+
+  if BCrypt::Password.new(pwd_digest) == pwd
+    db.execute("DELETE FROM user_product WHERE user_id = ?", user_id)
+    db.execute("DELETE FROM users WHERE id = ?", user_id)
+    session.clear
+    redirect '/register'
+  else
+    redirect '/error'
+  end
+end
+
