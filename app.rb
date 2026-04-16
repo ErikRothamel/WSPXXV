@@ -4,34 +4,32 @@ require 'sqlite3'
 require 'sinatra/reloader'
 require 'bcrypt'
 
+# Sinatra app configuration
 set :session_secret, '34567897656787654567898765456788765445678765434567898765434567898765434567890987654387434567898765434567876543245678876543456789856787654345678765'
 
 enable :sessions
+# Enable session support for login state management
 
 
 get '/homepage' do
-
+  # Render the homepage view
   slim(:homepage)
 end
 
 
 get '/register' do
-  
-  
-  
-
+  # Show the registration form
   slim(:register)
 end
 
 
 post '/register' do
-  
+  # Get registration form parameters
   user = params[:user]
   pwd = params[:pwd]
   pwd_confirm = params[:pwd_confirm]
 
-
-
+  # Open the SQLite database and verify unique username
   db = SQLite3::Database.new("db/databas.db")
   result=db.execute("SELECT id FROM users WHERE user=?" ,user)
 
@@ -54,15 +52,13 @@ end
 
 
 get '/login' do
-
-
-
-
+  # Show the login form
   slim(:login)
 end
 
 
 post '/login' do
+  # Authenticate user credentials
   user = params[:user]
   pwd = params[:pwd]
   
@@ -70,9 +66,8 @@ post '/login' do
   db.results_as_hash = true
   result=db.execute("SELECT id,pwd_digest FROM users WHERE user=?" ,user)
 
-
   if result.empty?
-    redirect('/error') #Fel
+    redirect('/error') # Fel
   end
 
   user_id = result.first["id"]
@@ -88,6 +83,7 @@ end
 
 
 get '/game' do
+  # Load game page with current user funds and any win/loss message
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
@@ -99,6 +95,7 @@ end
 
 
 post '/game' do
+  # Run a game round and update funds based on a random outcome
   user_id = session[:user_id]
   stake = params[:stake].to_i
 
@@ -120,6 +117,7 @@ end
 
 
 get '/cash' do
+  # Display cash deposit page with current user balance
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
@@ -130,6 +128,7 @@ end
 
 
 post '/cash' do
+  # Add deposited cash to current user funds
   user_id = session[:user_id]
   cash = params[:cash]
   
@@ -143,28 +142,22 @@ end
 
 
 get '/shop' do
+  # Load available products that the current user has not yet purchased
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
   @productsarr = db.execute("SELECT * FROM products WHERE id NOT IN (SELECT product_id FROM user_product WHERE user_id = ?)", session[:user_id])
-
-
   slim(:shop)
 end 
 
 
 post '/shop' do
-  
-
-
-
-
-
   redirect '/shop'
 end
 
 
 post '/buy' do
+  # Handle product purchases if the user has sufficient funds
   product_id = params[:product_id]
   user_id = session[:user_id]
 
@@ -184,6 +177,7 @@ post '/buy' do
 end
 
 get '/delete_account' do
+  # Show delete account confirmation page for current user
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
@@ -193,6 +187,7 @@ get '/delete_account' do
 end
 
 post '/delete_account' do
+  # Delete the user's account after verifying their password
   user_id = session[:user_id]
   pwd = params[:pwd]
 
@@ -211,4 +206,3 @@ post '/delete_account' do
     redirect '/error'
   end
 end
-
