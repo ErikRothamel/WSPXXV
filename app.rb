@@ -10,6 +10,9 @@ set :session_secret, '3456789765678765456789876545678876544567876543456789876543
 enable :sessions
 # Enable session support for login state management
 
+before do
+  db = SQLite3::Database.new("db/databas.db")
+end
 
 get '/homepage' do
   # Render the homepage view
@@ -83,9 +86,15 @@ end
 
 
 get '/game' do
+  user_id = session[:user_id]
+
   # Load game page with current user funds and any win/loss message
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
+
+  if user_id.nil?
+    redirect '/login'
+  end
 
   @funds = db.execute("SELECT funds FROM users WHERE id = ?", session[:user_id]).first["funds"]
 
@@ -117,9 +126,15 @@ end
 
 
 get '/cash' do
+  user_id = session[:user_id]
+
   # Display cash deposit page with current user balance
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
+
+  if user_id.nil?
+    redirect '/login'
+  end
 
   @funds = db.execute("SELECT funds FROM users WHERE id = ?", session[:user_id]).first["funds"]
 
@@ -131,9 +146,12 @@ post '/cash' do
   # Add deposited cash to current user funds
   user_id = session[:user_id]
   cash = params[:cash]
+
+  
   
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
+  
 
   db.execute("UPDATE users SET funds = funds + 0 + ? WHERE id = ?", [cash, user_id])
   
@@ -142,9 +160,14 @@ end
 
 
 get '/shop' do
+  user_id = session[:user_id]
   # Load available products that the current user has not yet purchased
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
+
+  if user_id.nil?
+    redirect '/login'
+  end
 
   @productsarr = db.execute("SELECT * FROM products WHERE id NOT IN (SELECT product_id FROM user_product WHERE user_id = ?)", session[:user_id])
   slim(:shop)
@@ -164,6 +187,7 @@ post '/buy' do
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
+
   price = db.execute("SELECT price FROM products WHERE id = ?", product_id).first["price"]
   funds = db.execute("SELECT funds FROM users WHERE id = ?", user_id).first["funds"]
 
@@ -177,9 +201,14 @@ post '/buy' do
 end
 
 get '/delete_account' do
+  user_id = session[:user_id]
   # Show delete account confirmation page for current user
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
+
+  if user_id.nil?
+    redirect '/login'
+  end
 
   @user = db.execute("SELECT user FROM users WHERE id = ?", session[:user_id]).first["user"]
 
@@ -205,4 +234,23 @@ post '/delete_account' do
   else
     redirect '/error'
   end
+end
+
+get '/error' do
+  slim(:error)
+end
+
+get '/inventarie' do
+  user_id = session[:user_id]
+  # Load the user's purchased products for display in the inventory
+  db = SQLite3::Database.new("db/databas.db")
+  db.results_as_hash = true
+
+  if user_id.nil?
+    redirect '/login'
+  end
+
+  @productsarr = db.execute("SELECT p.name, p.price FROM products p JOIN user_product up ON p.id = up.product_id WHERE up.user_id = ?", session[:user_id])
+
+  slim(:inventarie)
 end
