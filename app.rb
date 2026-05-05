@@ -11,7 +11,11 @@ enable :sessions
 # Enable session support for login state management
 
 before do
-  db = SQLite3::Database.new("db/databas.db")
+  public_routes = ['/login', '/register', '/error']
+  
+  unless public_routes.include?(request.path_info) || session[:user_id]
+    redirect '/login'
+  end
 end
 
 get '/homepage' do
@@ -92,9 +96,7 @@ get '/game' do
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
-  if user_id.nil?
-    redirect '/login'
-  end
+ 
 
   @funds = db.execute("SELECT funds FROM users WHERE id = ?", session[:user_id]).first["funds"]
 
@@ -132,9 +134,7 @@ get '/cash' do
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
-  if user_id.nil?
-    redirect '/login'
-  end
+ 
 
   @funds = db.execute("SELECT funds FROM users WHERE id = ?", session[:user_id]).first["funds"]
 
@@ -165,9 +165,7 @@ get '/shop' do
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
-  if user_id.nil?
-    redirect '/login'
-  end
+ 
 
   @productsarr = db.execute("SELECT * FROM products WHERE id NOT IN (SELECT product_id FROM user_product WHERE user_id = ?)", session[:user_id])
   slim(:shop)
@@ -206,9 +204,7 @@ get '/delete_account' do
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
-  if user_id.nil?
-    redirect '/login'
-  end
+ 
 
   @user = db.execute("SELECT user FROM users WHERE id = ?", session[:user_id]).first["user"]
 
@@ -246,11 +242,43 @@ get '/inventarie' do
   db = SQLite3::Database.new("db/databas.db")
   db.results_as_hash = true
 
-  if user_id.nil?
-    redirect '/login'
-  end
+ 
 
   @productsarr = db.execute("SELECT p.name, p.price FROM products p JOIN user_product up ON p.id = up.product_id WHERE up.user_id = ?", session[:user_id])
 
   slim(:inventarie)
+end
+
+
+get '/namechange' do
+  user_id = session[:user_id]
+
+  db = SQLite3::Database.new("db/databas.db")
+  db.results_as_hash = true
+
+  @user = db.execute("SELECT user FROM users WHERE id = ?", session[:user_id]).first["user"]
+
+ 
+
+
+  slim(:namechange)
+end
+
+post '/namechange' do
+  new_name = params[:new_name]
+  user_id = session[:user_id]
+
+ db = SQLite3::Database.new("db/databas.db")
+  db.results_as_hash = true
+
+  existing = db.execute("SELECT id FROM users WHERE user = ?", new_name)
+
+  if existing.empty?
+    db.execute("UPDATE users SET user = ? WHERE id = ?", [new_name, user_id])
+    redirect '/homepage'
+  else
+    redirect '/error'
+  end
+
+
 end
